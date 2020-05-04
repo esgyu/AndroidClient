@@ -27,6 +27,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Text;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -56,9 +59,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-//        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.INTERNET}, 2);
-//        ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
         if(!checkPermissions())
             requestPermissions();
         setContentView(R.layout.activity_main);
@@ -96,28 +96,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-//        switch (requestCode) {
-//            case 1: {
-//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                   Toast.makeText(getApplicationContext(), "Access to Storage Permission Granted. Thanks.", Toast.LENGTH_SHORT).show();
-//                } else {
-//                    Toast.makeText(getApplicationContext(), "Access to Storage Permission Denied.", Toast.LENGTH_SHORT).show();
-//                }
-//                return;
-//            }
-//            case 2: {
-//                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                   Toast.makeText(getApplicationContext(), "Access to Internet Permission Granted. Thanks.", Toast.LENGTH_SHORT).show();
-//                } else {
-//                    Toast.makeText(getApplicationContext(), "Access to Internet Permission Denied.", Toast.LENGTH_SHORT).show();
-//                }
-//                return;
-//            }
-//        }
-//    }
+    public void connectServerSendText(View v){
+        TextView responseText = findViewById(R.id.responseText);
+        EditText sendText = findViewById(R.id.sendText);
+        responseText.setText("Sending the Files. Please Wait ...");
+        EditText ipv4AddressView = findViewById(R.id.IPAddress);
+        String ipv4Address = ipv4AddressView.getText().toString();
+        EditText portNumberView = findViewById(R.id.portNumber);
+        String portNumber = portNumberView.getText().toString();
+        Matcher matcher = IP_ADDRESS.matcher(ipv4Address);
 
+        if (!matcher.matches()) {
+            responseText.setText("Invalid IPv4 Address. Please Check Your Inputs.");
+            return;
+        }
+        String postUrl = "http://" + ipv4Address + ":" + portNumber + "/string";
+        RequestBody formBody = new FormBody.Builder()
+                .add("message", sendText.getText().toString())
+                .build();
+        postRequest(postUrl,formBody);
+
+    }
 
     public void connectServer(View v) {
         TextView responseText = findViewById(R.id.responseText);
@@ -159,14 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
             multipartBodyBuilder.addFormDataPart("image" + i, "Android_Flask_" + i + ".jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray));
         }
-
         RequestBody postBodyImage = multipartBodyBuilder.build();
-
-//        RequestBody postBodyImage = new MultipartBody.Builder()
-//                .setType(MultipartBody.FORM)
-//                .addFormDataPart("image", "androidFlask.jpg", RequestBody.create(MediaType.parse("image/*jpg"), byteArray))
-//                .build();
-
         postRequest(postUrl, postBodyImage);
     }
 
@@ -240,7 +232,6 @@ public class MainActivity extends AppCompatActivity {
                     numSelectedImages.setText("Number of Selected Images : " + selectedImagesPaths.size());
                 } else {
                     // When multiple images are selected.
-                    // Thanks tp Laith Mihyar for this Stackoverflow answer : https://stackoverflow.com/a/34047251/5426539
                     if (data.getClipData() != null) {
                         ClipData clipData = data.getClipData();
                         for (int i = 0; i < clipData.getItemCount(); i++) {
@@ -269,9 +260,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    // Implementation of the getPath() method and all its requirements is taken from the StackOverflow Paul Burke's answer: https://stackoverflow.com/a/20559175/5426539
     public static String getPath(final Context context, final Uri uri) {
-
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
         // DocumentProvider
